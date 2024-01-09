@@ -9,21 +9,24 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: 'AIzaSyBHPpeIKziMz4HkMT9OpevYpSruFqps1uw',
+      appId: '1:206325093013:android:1a5efaed74b44cdb05819c',
+      messagingSenderId: '206325093013',
+      projectId: 'the-bears',
+      storageBucket: 'the-bears.appspot.com',
+    )
+  );
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) {
-    runApp(MultiProvider(
-      providers: [
-        // ChangeNotifierProvider(create: (_) => AuthenticationController()),
-      ],
-      child: MaterialApp(
-        title: 'Gate Access',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-            fontFamily: 'Ubuntu', primaryColor: AppColors.darkMainColor),
-        initialRoute: ScanMenuScreen.id,
-        onGenerateRoute: RouteGenerator.generateRoute,
-      ),
+    runApp(MaterialApp(
+      title: 'Gate Access',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+          fontFamily: 'Ubuntu', primaryColor: AppColors.darkMainColor),
+      initialRoute: ScanMenuScreen.id,
+      onGenerateRoute: RouteGenerator.generateRoute,
     ));
   });
 }
