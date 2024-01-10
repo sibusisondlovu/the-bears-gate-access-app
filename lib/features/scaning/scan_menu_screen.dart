@@ -1,5 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gate_access/config/app_colors.dart';
+import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 class ScanMenuScreen extends StatefulWidget {
   const ScanMenuScreen({super.key});
@@ -10,6 +14,9 @@ class ScanMenuScreen extends StatefulWidget {
 }
 
 class _ScanMenuScreenState extends State<ScanMenuScreen> {
+
+  bool isLoading = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,37 +45,40 @@ class _ScanMenuScreenState extends State<ScanMenuScreen> {
               ))
         ],
       ),
-      body: Column(
+      body:isLoading? const Center(child: CircularProgressIndicator(),) : Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(
+          const SizedBox(
             width: double.infinity,
           ),
-          Text('Logged in as:'),
-          Text('NAME SURNAME',
+          const Text('Logged in as:'),
+          const Text('NAME SURNAME',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28)),
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.15,
           ),
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
             child: ListTile(
+              onTap: ()async{
+                await createEntry(context);
+              },
               iconColor: Colors.white,
               minVerticalPadding: 30,
               tileColor: AppColors.darkMainColor,
-              leading: Icon(
+              leading: const Icon(
                 Icons.arrow_downward,
                 size: 80,
               ),
-              title: Text(
+              title: const Text(
                 'SCAN IN',
                 style: TextStyle(fontSize: 32, color: Colors.white),
               ),
-              trailing: Icon(Icons.cancel),
+              trailing: const Icon(Icons.arrow_forward_ios),
             ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
             child: ListTile(
               iconColor: Colors.white,
@@ -88,8 +98,8 @@ class _ScanMenuScreenState extends State<ScanMenuScreen> {
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.1,
           ),
-          Text('10 January 2024'),
-          Text('23:45.34', style: TextStyle(
+          const Text('10 January 2024'),
+          const Text('23:45.34', style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 28
           )
@@ -97,5 +107,49 @@ class _ScanMenuScreenState extends State<ScanMenuScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> createEntry(context) async {
+    setState(() {
+      isLoading = true;
+    });
+
+    var uuid = const Uuid();
+    var now = DateTime.now();
+    var entryTime = DateFormat("dd MMMM yyyy 'at' HH'h'mm")
+        .format(now)
+        .replaceAll('at', '@');
+    final String newUuid = uuid.v4();
+    final newEntryMap = {
+      'entryId': newUuid,
+      'dateTimeIn': entryTime,
+      'dateTimeOut': '',
+      'diskInformation' : '',
+      'driverPhoto': '',
+      'vehiclePhoto': '',
+      'driverLicence': '',
+      'staffId' : 'EMP0001',
+    };
+    try {
+      await FirebaseFirestore.instance
+          .collection('vehicleEntries')
+          .doc(newUuid)
+          .set(newEntryMap);
+
+      setState(() {
+        isLoading = false;
+      });
+
+      // Navigate to the new page with the entryId
+      Navigator.pushNamed(context, 'scanTypesMenuScreen', arguments: newUuid);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error creating entry: $e');
+      }
+      setState(() {
+        isLoading = false;
+      });
+
+    }
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gate_access/config/app_colors.dart';
 import 'package:gate_access/config/routes.dart';
-import 'package:gate_access/features/scan_menu_screen.dart';
+import 'package:gate_access/features/scaning/scan_menu_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() async {

@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
-import 'package:gate_access/features/scan_menu_screen.dart';
+import 'package:gate_access/features/scaning/car_disk_scan_screen.dart';
+import 'package:gate_access/features/scaning/scan_menu_screen.dart';
+import 'package:gate_access/features/scaning/scan_types_menu.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -9,6 +11,12 @@ class RouteGenerator {
 
       case ScanMenuScreen.id:
         return _route(const ScanMenuScreen());
+
+      case ScanTypesMenuScreen.id:
+        return _route(ScanTypesMenuScreen(entryId: args,));
+
+      case CarDiskScanScreen.id:
+        return _route(const CarDiskScanScreen());
 
       default:
         return _errorRoute(settings.name);
