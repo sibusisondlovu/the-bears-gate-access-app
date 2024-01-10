@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gate_access/config/app_colors.dart';
 import 'package:gate_access/config/routes.dart';
+import 'package:gate_access/features/authentication/login_screen.dart';
 import 'package:gate_access/features/scaning/scan_menu_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -25,7 +26,7 @@ void main() async {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
           fontFamily: 'Ubuntu', primaryColor: AppColors.darkMainColor),
-      initialRoute: ScanMenuScreen.id,
+      initialRoute: LoginScreen.id,
       onGenerateRoute: RouteGenerator.generateRoute,
     ));
   });
