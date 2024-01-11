@@ -1,11 +1,14 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:gate_access/config/app_colors.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+import 'package:intl/intl.dart';
 
 class ScanTypesMenuScreen extends StatefulWidget {
   const ScanTypesMenuScreen({super.key, required this.entryId});
@@ -18,56 +21,30 @@ class ScanTypesMenuScreen extends StatefulWidget {
 
 class _ScanTypesMenuScreenState extends State<ScanTypesMenuScreen> {
   String carDiskInformation = '';
+  String licenceInformation = '';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ImagePicker picker = ImagePicker();
+  String? driverDiskImagePath;
+  String? licenceDiskImagePath;
 
-  Future _scanDriverLicence(final imagePath) async {
-    final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
-    final RecognizedText recognizedText =
-    await textRecognizer.processImage(InputImage.fromFilePath(imagePath));
-    String text = recognizedText.text.toString();
-
-    try {
-      await _firestore.collection('vehicleEntries').doc(widget.entryId).update({
-        'diskInformation': text,
-      });
-
-
-
-      if (kDebugMode) {
-        print('Text saved to Firestore!');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error saving text: $e');
-      }
-    }
-
-  }
-
-  Future _scanCarDisk(final imagePath) async {
+  void _scanDriverLicence(final imagePath) async {
     final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
     final RecognizedText recognizedText =
         await textRecognizer.processImage(InputImage.fromFilePath(imagePath));
-    String text = recognizedText.text.toString();
 
-    try {
-      await _firestore.collection('vehicleEntries').doc(widget.entryId).update({
-        'diskInformation': text,
-      });
+    setState(() {
+      licenceInformation = recognizedText.text.toString();
+    });
+  }
 
+  void _scanCarDisk(final imagePath) async {
+    final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    final RecognizedText recognizedText =
+        await textRecognizer.processImage(InputImage.fromFilePath(imagePath));
 
-
-      if (kDebugMode) {
-        print('Text saved to Firestore!');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error saving text: $e');
-      }
-    }
-
-    return text;
+    setState(() {
+      carDiskInformation = recognizedText.text.toString();
+    });
   }
 
   @override
@@ -76,24 +53,20 @@ class _ScanTypesMenuScreenState extends State<ScanTypesMenuScreen> {
       body: Column(
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 150),
+            margin: const EdgeInsets.only(top: 50),
             height: 75,
-            width: MediaQuery.of(context).size.width * 0.8, // Set width to 80% of the screen width
+            width: MediaQuery.of(context).size.width *
+                0.8, // Set width to 80% of the screen width
             child: ElevatedButton(
-              onPressed: () async {
-                try {
-                  await _firestore.collection('yourCollection').doc(widget.entryId).delete();
-                  print('Document deleted successfully');
-                  Navigator.pop(context);
-                } catch (e) {
-                  print('Error deleting document: $e');
-                  Navigator.pop(context);
-                }
+              onPressed: () {
+                Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent, // Set the background color to black
+                backgroundColor:
+                    Colors.redAccent, // Set the background color to black
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25.0), // Set rounded corners
+                  borderRadius:
+                      BorderRadius.circular(25.0), // Set rounded corners
                 ),
               ),
               child: const Text(
@@ -107,94 +80,80 @@ class _ScanTypesMenuScreenState extends State<ScanTypesMenuScreen> {
               ),
             ),
           ),
-          StreamBuilder<DocumentSnapshot>(
-            stream: _firestore.collection('vehicleEntries').doc(widget.entryId).snapshots(),
-            builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (!snapshot.hasData) {
-                return const Center(child: Text('An Error Occurred'));
-              } else if (!snapshot.data!.exists) {
-                return const Center(child: Text('Document does not exist'));
-              } else {
-
-                Map<String, dynamic> documentData = snapshot.data!.data() as Map<String, dynamic>;
-                String diskInformation = documentData['diskInformation'] ?? '';
-                String driveInformation = documentData['driverLicence'] ?? '';
-
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.15,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                      child: ListTile(
-                        onTap: () async {
-                          carDiskScan();
-                        },
-                        iconColor: Colors.white,
-                        minVerticalPadding: 30,
-                        tileColor: AppColors.darkMainColor,
-                        leading: Image.asset(
-                          'assets/images/car-disk.png',
-                          width: 50,
-                        ),
-                        title: const Text(
-                          'CAR DISK',
-                          style: TextStyle(fontSize: 24, color: Colors.white),
-                        ),
-                        trailing: diskInformation == '' ? const Icon(
-                          Icons.cancel,
-                          color: Colors.red,
-                        ) : const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                      child: ListTile(
-                        onTap: () {
-                          driverLicenceScan();
-                        },
-                        iconColor: Colors.white,
-                        minVerticalPadding: 30,
-                        tileColor: AppColors.darkMainColor,
-                        leading: Image.asset(
-                          'assets/images/driver-licence.jpg',
-                          width: 50,
-                        ),
-                        title: const Text(
-                          'DRIVER LICENCE',
-                          style: TextStyle(fontSize: 24, color: Colors.white),
-                        ),
-                        trailing: driveInformation == '' ? const Icon(
-                          Icons.cancel,
-                          color: Colors.red,
-                        ) : const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.1,
-                    ),
-                    diskInformation.isNotEmpty && driveInformation.isNotEmpty? SizedBox(
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(
+                height: 30,
+              ),
+              licenceDiskImagePath == null? ClipOval(
+                child: Image.asset(
+                  'assets/images/car-disk.png',
+                  width: 200, // Adjust the width as needed
+                  height: 200, // Adjust the height as needed
+                  fit: BoxFit.cover,
+                ),
+              ): ClipOval(
+                child: Image.file(
+                  File(licenceDiskImagePath!),
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.fill,
+                ),
+              ),
+              ElevatedButton(
+                  onPressed: () {
+                    carDiskScan();
+                  },
+                  child: const Text(
+                    'SCAN LICENCE DISK',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 2),
+                  )),
+              const Divider(height: 1),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.05,
+              ),
+              driverDiskImagePath == null? Image.asset(
+                'assets/images/driver-licence.jpg',
+                width: 270,
+                height: 150,
+                fit: BoxFit.fill,
+              ): Image.file(
+                File(driverDiskImagePath!),
+                width: 270,
+                height: 150,
+                fit: BoxFit.fill,
+              ),
+              ElevatedButton(
+                  onPressed: () {
+                    driverLicenceScan();
+                  },
+                  child: const Text(
+                    'SCAN DRIVER LICENCE',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 2),
+                  )),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.1,
+              ),
+              carDiskInformation.isNotEmpty && licenceInformation.isNotEmpty
+                  ? SizedBox(
                       height: 75,
-                      width: MediaQuery.of(context).size.width * 0.8, // Set width to 80% of the screen width
+                      width: MediaQuery.of(context).size.width *
+                          0.8, // Set width to 80% of the screen width
                       child: ElevatedButton(
-                        onPressed: () {
-                          // Add your onPressed logic here
+                        onPressed: () async {
+                         await createEntry();
+                         Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, // Set the background color to black
+                          backgroundColor:
+                              Colors.green, // Set the background color to black
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25.0), // Set rounded corners
+                            borderRadius: BorderRadius.circular(
+                                25.0), // Set rounded corners
                           ),
                         ),
                         child: const Text(
@@ -207,40 +166,67 @@ class _ScanTypesMenuScreenState extends State<ScanTypesMenuScreen> {
                           ),
                         ),
                       ),
-                    ):Container(),
-                    const Text(
-                      'Entry ID',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      widget.entryId,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
-                );
-              }
-            },
-          ),
+                    )
+                  : Container(),
+              const Text(
+                'Entry ID',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                widget.entryId,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          )
         ],
       ),
     );
   }
 
-
   Future<void> carDiskScan() async {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    String a = await _scanCarDisk(image!.path);
+
     setState(() {
-      carDiskInformation = a;
+      licenceDiskImagePath = image!.path;
     });
+    _scanCarDisk(image!.path);
   }
 
   Future<void> driverLicenceScan() async {
     final XFile? image = await picker.pickImage(source: ImageSource.camera);
-    String a = await _scanDriverLicence(image!.path);
     setState(() {
-      carDiskInformation = a;
+      driverDiskImagePath = image!.path;
     });
+    _scanDriverLicence(image!.path);
   }
 
+  Future<void> createEntry() async {
+    var now = DateTime.now();
+    var entryTime = DateFormat("dd MMMM yyyy 'at' HH'h'mm")
+        .format(now)
+        .replaceAll('at', '@');
+
+    final newEntryMap = {
+      'entryId': widget.entryId,
+      'dateTimeIn': entryTime,
+      'dateTimeOut': '',
+      'diskInformation': carDiskInformation,
+      'driverLicence': licenceInformation,
+      'employeeCode': FirebaseAuth.instance.currentUser!.uid,
+    };
+    try {
+      await _firestore
+          .collection('vehicleEntries')
+          .doc(widget.entryId)
+          .set(newEntryMap);
+      if (kDebugMode) {
+        print('done');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error creating entry: $e');
+      }
+    }
+
+  }
 }
